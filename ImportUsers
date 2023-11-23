@@ -11,7 +11,7 @@ namespace ProductShop
     {
         public static void Main()
         {
-            string inputXml = @"..\..\..\Datasets\categories-products.xml";
+            string inputXml = @"..\..\..\Datasets\users.xml";
 
             ProductShopContext context = new ProductShopContext();
 
