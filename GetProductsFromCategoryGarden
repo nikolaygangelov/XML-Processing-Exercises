@@ -1,0 +1,57 @@
+using Newtonsoft.Json;
+using ProductShop.Data;
+using ProductShop.DTOs.Export;
+using ProductShop.DTOs.Import;
+using ProductShop.Models;
+using System.Xml.Serialization;
+
+namespace ProductShop
+{
+    public class StartUp
+    {
+        public static void Main()
+        {
+
+            ProductShopContext context = new ProductShopContext();
+
+            Console.WriteLine(GetProductsFromCategoryGarden(context);
+        }
+
+       public static string GetProductsFromCategoryGarden(ProductShopContext context)
+        {
+      // using Data Transfer Object Class to map it with Categories
+            XmlSerializer serializer = new XmlSerializer(typeof(ExportCategoryGardenDTO[]), new XmlRootAttribute("Categories"));
+
+            var xns = new XmlSerializerNamespaces();
+
+      // one way to display empty namespace in resulted file
+            xns.Add(string.Empty, string.Empty);
+
+      // "using" automatically closes opened connections 
+      // adding file location
+            using var writer = new StreamWriter("products-garden.xml");
+
+      // using identical properties in order to map successfully
+            var productsFromGarden = context.CategoryProducts
+                .Where(c => c.Category.Name == "Garden")
+                .Select(p => new ExportCategoryGardenDTO
+                {
+                    Id = p.Product.Id,
+                    Name = p.Product.Name,
+                    Price = p.Product.Price
+                })
+                .OrderBy(p => p.Price)
+                .ToArray();
+            
+
+     // Serialize method needs file, TextReader object and namespace to convert/map
+            serializer.Serialize(writer, productsFromGarden, xns);
+
+     // explicitly closing connection in terms of reaching edge cases
+            writer.Close();
+
+            return File.ReadAllText("products-garden.xml");
+        }
+
+    }
+}
