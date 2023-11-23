@@ -1,0 +1,46 @@
+using Newtonsoft.Json;
+using ProductShop.Data;
+using ProductShop.DTOs.Export;
+using ProductShop.DTOs.Import;
+using ProductShop.Models;
+using System.Xml.Serialization;
+
+namespace ProductShop
+{
+    public class StartUp
+    {
+        public static void Main()
+        {
+            string inputXml = @"..\..\..\Datasets\products.xml";
+
+            ProductShopContext context = new ProductShopContext();
+
+            Console.WriteLine(ImportProducts(context, inputXml));
+        }
+
+        public static string ImportProducts(ProductShopContext context, string inputXml)
+        {
+        //using Data Transfer Object Class to map it with Products
+            var serializer = new XmlSerializer(typeof(ImportProductsDTO[]), new XmlRootAttribute("Products"));
+
+        //Deserialize method needs TextReader object to convert/map
+            var productsArrayDTOs = (ImportProductsDTO[])serializer.Deserialize(new StreamReader(inputXml));
+
+        //using identical properties in order to map successfully
+            var productsArray = productsArrayDTOs
+                .Select(p => new Product
+                {
+                    Name = p.Name,
+                    Price = p.Price,
+                    SellerId = p.SellerId,
+                    BuyerId = p.BuyerId
+                }).ToArray();
+
+        // AddRange method allows you to add a collection to context
+            context.AddRange(productsArray);
+            context.SaveChanges();
+
+            return $"Successfully imported {productsArray.Length}";
+        }
+    }
+}
