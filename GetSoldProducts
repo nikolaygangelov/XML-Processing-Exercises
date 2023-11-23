@@ -1,0 +1,63 @@
+using Newtonsoft.Json;
+using ProductShop.Data;
+using ProductShop.DTOs.Export;
+using ProductShop.DTOs.Import;
+using ProductShop.Models;
+using System.Xml.Serialization;
+
+namespace ProductShop
+{
+    public class StartUp
+    {
+        public static void Main()
+        {
+
+            ProductShopContext context = new ProductShopContext();
+
+            Console.WriteLine(GetProductsInRange(context);
+        }
+
+        public static string GetSoldProducts(ProductShopContext context)
+        {
+        // using Data Transfer Object Class to map it with Users
+            XmlSerializer serializer = new XmlSerializer(typeof(ExportSoldProductsDTO[]), new XmlRootAttribute("Users"));
+
+            var xns = new XmlSerializerNamespaces();
+
+        // one way to display empty namespace in resulted file
+            xns.Add(string.Empty, string.Empty);
+
+        // "using" automatically closes opened connections 
+        // adding file location
+            using var writer = new StreamWriter("users-sold-products.xml");
+
+        // using identical properties in order to map successfully
+            var users = context.Users
+                .Where(u => u.ProductsSold.Any(p => p.BuyerId != null))
+                .Select(u => new ExportSoldProductsDTO
+                {
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    ProductsSold = u.ProductsSold
+                    .Select(p => new ExportSoldProductsNestedDTO
+                    {
+                        Name = p.Name,
+                        Price = p.Price
+                    })
+                    .ToArray()
+                })
+                .OrderBy(u => u.LastName)
+                .ThenBy(u => u.FirstName)
+                .Take(5)
+                .ToArray();
+
+        // Serialize method needs file, TextReader object and namespace to convert/map
+            serializer.Serialize(writer, users, xns);
+
+        // explicitly closing connection in terms of reaching edge cases
+            writer.Close();
+
+            return File.ReadAllText("users-sold-products.xml");
+        }
+    }
+}
