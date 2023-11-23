@@ -1,0 +1,75 @@
+using Newtonsoft.Json;
+using ProductShop.Data;
+using ProductShop.DTOs.Export;
+using ProductShop.DTOs.Import;
+using ProductShop.Models;
+using System.Xml.Serialization;
+
+namespace ProductShop
+{
+    public class StartUp
+    {
+        public static void Main()
+        {
+
+            ProductShopContext context = new ProductShopContext();
+
+            Console.WriteLine(GetUsersWithProducts(context);
+        }
+
+       public static string GetUsersWithProducts(ProductShopContext context)
+        {
+       // using Data Transfer Object Class to map it with Users and UsersWithProductsDTO
+            XmlSerializer serializer = new XmlSerializer(typeof(UsersWithProductsUsersCountDTO), new XmlRootAttribute("Users"));
+
+            var xns = new XmlSerializerNamespaces();
+
+      // one way to display empty namespace in resulted file
+            xns.Add(string.Empty, string.Empty);
+
+      // "using" automatically closes opened connections 
+      // adding file location
+            using var writer = new StreamWriter("users-and-products.xml");
+
+     // using identical properties in order to map successfully
+            var users = context.Users
+                .Where(u => u.ProductsSold.Any(p => p.BuyerId != null))
+                .OrderByDescending(u => u.ProductsSold.Count())
+                .Take(10)
+                .Select(u => new UsersWithProductsDTO  
+                {
+                    FirstName = u.FirstName,
+                    LastName = u.LastName,
+                    Age = u.Age,
+                    SoldProducts = new UsersWithProductsSoldCountDTO    
+                    {
+                        Count = u.ProductsSold.Count,
+                        Products = u.ProductsSold.Select(p => new UsersWithProductsSoldDTO   
+                        {
+                            Name = p.Name,
+                            Price = p.Price
+                        })
+                        .OrderByDescending(p => p.Price).ToArray()
+                    }
+                })
+                .ToArray();
+
+
+     // nesting in object to achieve required property and identation
+            var output = new UsersWithProductsUsersCountDTO  
+            {
+                Count = context.Users.Count(u => u.ProductsSold.Any()),
+                Users = users
+            };
+
+    // Serialize method needs file, TextReader object and namespace to convert/map
+            serializer.Serialize(writer, output, xns);
+
+    // explicitly closing connection in terms of reaching edge cases
+            writer.Close();
+
+            return File.ReadAllText("users-and-products.xml");
+        }
+
+    }
+}
